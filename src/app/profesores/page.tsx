@@ -1,105 +1,83 @@
 'use client';
-import { Card, Col, Row, Space, Table, TableProps, Tag } from 'antd';
-import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Button, Card, Col, Row, Space, Table, TableProps, Tag } from 'antd';
+import React, { useMemo } from 'react';
+import profesoresService from '../../services/profesores.service';
+import FormModal from '@/components/general/form-modal';
+import ProfesorForm from '@/components/profesor/ProfesorForm';
 
-interface Props {
-  // Define your component's props here
-}
 
-interface DataType {
-    key: string;
-    name: string;
-    age: number;
-    address: string;
-    tags: string[];
-}
 
-const columns: TableProps<DataType>['columns'] = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text) => <a>{text}</a>,
-    },
-    {
-      title: 'Age',
-      dataIndex: 'age',
-      key: 'age',
-    },
-    {
-      title: 'Address',
-      dataIndex: 'address',
-      key: 'address',
-    },
-    {
-      title: 'Tags',
-      key: 'tags',
-      dataIndex: 'tags',
-      render: (_, { tags }) => (
-        <>
-          {tags.map((tag) => {
-            let color = tag.length > 5 ? 'geekblue' : 'green';
-            if (tag === 'loser') {
-              color = 'volcano';
-            }
-            return (
-              <Tag color={color} key={tag}>
-                {tag.toUpperCase()}
-              </Tag>
-            );
-          })}
-        </>
-      ),
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      render: (_, record) => (
-        <Space size="middle">
-          <a>Invite {record.name}</a>
-          <a>Delete</a>
-        </Space>
-      ),
-    },
-  ];
-  
-  const data: DataType[] = [
-    {
-      key: '1',
-      name: 'John Brown',
-      age: 32,
-      address: 'New York No. 1 Lake Park',
-      tags: ['nice', 'developer'],
-    },
-    {
-      key: '2',
-      name: 'Jim Green',
-      age: 42,
-      address: 'London No. 1 Lake Park',
-      tags: ['loser'],
-    },
-    {
-      key: '3',
-      name: 'Joe Black',
-      age: 32,
-      address: 'Sydney No. 1 Lake Park',
-      tags: ['cool', 'teacher'],
-    },
-  ];
-  
-
-const MyComponent: React.FC<Props> = (props) => {
-  // Add your component logic here
-
+const Profesores = () => {
+  const [page, setPage] = React.useState(1);
+  const [isModalVisible, setIsModalVisible] = React.useState(false);
+  const {
+    isLoading,
+    isError,
+    error,
+    data: profesores,
+  } = useQuery({
+    queryKey: ['profesores', page],
+    queryFn: ({ signal }) => profesoresService.getAll(page, 20, signal),
+  });
+  const columns = useMemo(
+    () => [
+      {
+        title: 'Nombre',
+        dataIndex: 'nombre',
+        key: 'nombre',
+        render: (text) => <a>{text}</a>,
+      },
+      {
+        title: 'Apellidos',
+        dataIndex: 'apellidos',
+        key: 'apellidos',
+      },
+      {
+        title: 'Genero',
+        dataIndex: 'genero',
+        key: 'genero',
+      },
+      {
+        title: 'Action',
+        key: 'action',
+        render: (_, record) => (
+          <Space size='middle'>
+            <a>Invite {record.name}</a>
+            <a>Delete</a>
+          </Space>
+        ),
+      },
+    ],
+    [],
+  ) as TableProps<any>['columns'];
+  if (isError) return <div>Error: {error.message}</div>;
   return (
     <Row>
+      <FormModal
+        isVisisble={isModalVisible}
+        title='Nuevo profesor'
+        onClose={() => setIsModalVisible(false)}
+        okText='Guardar'
+      >
+        <ProfesorForm />
+      </FormModal>
       <Col span={24}>
-        <Card>
-            <Table columns={columns} dataSource={data} />
+        <Card title='Profesores'>
+          <Row justify='end'>
+            <Col>
+              <Button type='primary' onClick={() => setIsModalVisible(true)}>Nuevo</Button>
+            </Col>
+          </Row>
+          <Table
+            columns={columns}
+            dataSource={profesores}
+            loading={isLoading}
+          ></Table>
         </Card>
       </Col>
     </Row>
   );
 };
 
-export default MyComponent;
+export default Profesores;

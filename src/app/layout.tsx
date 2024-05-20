@@ -10,9 +10,13 @@ import { useState } from 'react';
 const { Content, Sider } = Layout;
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UnorderedListOutlined , IdcardOutlined} from '@ant-design/icons';
+import axios from 'axios';
 
 const inter = Inter({ subsets: ['latin'] });
 const queryClient = new QueryClient();
+
+axios.defaults.baseURL = 'http://localhost:5175/api';
+
 export default function RootLayout({
   children,
 }: Readonly<{
