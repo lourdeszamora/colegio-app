@@ -1,5 +1,11 @@
 'use client';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  UseMutateFunction,
+  UseMutationResult,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import {
   Button,
   Card,
@@ -9,19 +15,20 @@ import {
   Space,
   Table,
   TableProps,
-  Tag,
 } from 'antd';
 import React, { useMemo } from 'react';
 import profesoresService from '../../services/profesores.service';
 import FormModal from '@/components/general/form-modal';
 import ProfesorForm from '@/components/profesor/ProfesorForm';
-import { on } from 'events';
 import Profesor from '@/models/profesor.entity';
+import { AxiosError } from 'axios';
 
 const Profesores = () => {
   const [page, setPage] = React.useState(1);
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const queryClient = useQueryClient();
+
+  const [profesor, setProfesor] = React.useState<Profesor>();
   const {
     isLoading,
     isError,
@@ -40,13 +47,60 @@ const Profesores = () => {
       );
       setIsModalVisible(false);
     },
-    onError: (error) => {
-      message.error('No se pudo guardar el profesor, intente de nuevo!');
+    onError: (error: AxiosError) => {
+      let data: any = error.response?.data;
+      if(data.errors){
+        data.errors.id && message.error(data.errors.id);
+        data.errors.nombre && message.error(data.errors.nombre);
+        data.errors.apellidos && message.error(data.errors.apellidos);
+      }else if(data){
+        data && message.error(data as string);
+      }else{
+        message.error(error.message);
+      }
+    },
+  });
+  const [action, setAction] = React.useState<any>(createProfesor);
+  const updateProfesor = useMutation({
+    mutationFn: (data: Profesor) => profesoresService.update(data),
+    onSuccess: (data: Profesor) => {
+      queryClient.invalidateQueries({ queryKey: ['profesores', page] });
+      message.success(
+        `El Profesor ${data.nombre} ${data.apellidos} fue actualizado!`,
+      );
+      setIsModalVisible(false);
+    },
+    onError: (error: AxiosError) => {
+      let data: any = error.response?.data;
+      if(data.errors){
+        data.errors.id && message.error(data.errors.id);
+        data.errors.nombre && message.error(data.errors.nombre);
+        data.errors.apellidos && message.error(data.errors.apellidos);
+      }else if(data){
+        data && message.error(data as string);
+      }else{
+        message.error(error.message);
+      }
+    },
+  });
+  const deleteProfesor = useMutation({
+    mutationFn: (id: string) => profesoresService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profesores', page] });
+      message.success('Profesor eliminado!');
+    },
+    onError: (error: AxiosError) => {
+      error.message && message.error(error.message);
     },
   });
 
   const columns = useMemo(
     () => [
+      {
+        title: 'Id',
+        dataIndex: 'id',
+        key: 'id',
+      },
       {
         title: 'Nombre',
         dataIndex: 'nombre',
@@ -68,8 +122,18 @@ const Profesores = () => {
         key: 'action',
         render: (_, record) => (
           <Space size='middle'>
-            <a>Invite {record.name}</a>
-            <a>Delete</a>
+            <a
+              onClick={() => {
+                setProfesor(record);
+                setAction(updateProfesor);
+                setIsModalVisible(true);
+              }}
+            >
+              Editar
+            </a>
+            <a onClick={()=>{
+              deleteProfesor.mutate(record.id);
+            }}>Eliminar</a>
           </Space>
         ),
       },
@@ -85,7 +149,8 @@ const Profesores = () => {
         onClose={() => setIsModalVisible(false)}
         okText='Guardar'
         isLoading={createProfesor.isPending}
-        onSubmit={createProfesor.mutate}
+        onSubmit={action?.mutate}
+        initialValues={profesor}
       >
         <ProfesorForm />
       </FormModal>
@@ -93,7 +158,14 @@ const Profesores = () => {
         <Card title='Profesores'>
           <Row justify='end'>
             <Col>
-              <Button type='primary' onClick={() => setIsModalVisible(true)}>
+              <Button
+                type='primary'
+                onClick={() => {
+                  setProfesor(new Profesor());
+                  setAction(createProfesor);
+                  setIsModalVisible(true);
+                }}
+              >
                 Nuevo
               </Button>
             </Col>
@@ -102,6 +174,10 @@ const Profesores = () => {
             columns={columns}
             dataSource={profesores}
             loading={isLoading}
+            pagination={{
+              current: page,
+              onChange: (page) => setPage(page),
+            }}
           ></Table>
         </Card>
       </Col>

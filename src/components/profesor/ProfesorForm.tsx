@@ -5,10 +5,6 @@ import { IFormProps } from '@/models/form-props.interface';
 import Genero from '@/models/genero.entity';
 
 const ProfesorForm = ({ form, onSubmit }: IFormProps<Profesor>) => {
-  const onFinish = (values: Profesor) => {
-    console.log('Form values:', values);
-  };
-
   return (
     <Form form={form} onFinish={onSubmit}>
       <Form.Item
