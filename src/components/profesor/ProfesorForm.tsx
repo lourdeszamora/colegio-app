@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, Input, Button, FormInstance, Select } from 'antd';
+import { Form, Input, Select } from 'antd';
 import Profesor from '../../models/profesor.entity';
 import { IFormProps } from '@/models/form-props.interface';
 import Genero from '@/models/genero.entity';

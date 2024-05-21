@@ -15,38 +15,59 @@ import {
   TableProps,
 } from 'antd';
 import React, { useEffect, useMemo } from 'react';
-import profesoresService from '../../services/profesores.service';
 import FormModal from '@/components/general/form-modal';
-import ProfesorForm from '@/components/profesor/ProfesorForm';
-import Profesor from '@/models/profesor.entity';
 import { AxiosError } from 'axios';
+import Grado from '@/models/grado.entity';
+import gradosService from '@/services/grados.service';
+import GradoForm from '@/components/grado/GradoForm';
 
-const Profesores = () => {
+const Grados = () => {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [isModalVisible, setIsModalVisible] = React.useState(false);
+  const [isModalNewVisible, setIsModalNewVisible] = React.useState(false);
   const queryClient = useQueryClient();
   const [totalCount, setTotalCount] = React.useState(0);
-  const [profesor, setProfesor] = React.useState<Profesor>();
+  const [grado, setGrado] = React.useState<Grado>();
   const {
     isLoading,
     isError,
     error,
-    data: profesores,
+    data: grados,
   } = useQuery({
-    queryKey: ['profesores', currentPage],
-    queryFn: ({ signal }) => profesoresService.getAll(currentPage, 20, signal),
+    queryKey: ['grados', currentPage],
+    queryFn: ({ signal }) => gradosService.getAll(currentPage, 20, signal),
   });
-
+  const createGrado = useMutation({
+    mutationFn: (data: Grado) => gradosService.create(data),
+    onSuccess: (data: Grado) => {
+      queryClient.invalidateQueries({ queryKey: ['grados', currentPage] });
+      message.success(
+        `El Grado ${data.nombre} fue agregado!`,
+      );
+      setIsModalNewVisible(false);
+    },
+    onError: (error: AxiosError) => {
+      let data: any = error.response?.data;
+      if(data.errors){
+        data.errors.id && message.error(data.errors.id);
+        data.errors.nombre && message.error(data.errors.nombre);
+        data.errors.profesorId && message.error(data.errors.profesorId);
+      }else if(data){
+        data && message.error(data as string);
+      }else{
+        message.error(error.message);
+      }
+    },
+  });
   useEffect(() => {
-    setTotalCount(profesores?.total || 0);
-  }, [profesores]);
-
-  const createProfesor = useMutation({
-    mutationFn: (data: Profesor) => profesoresService.create(data),
-    onSuccess: (data: Profesor) => {
-      queryClient.invalidateQueries({ queryKey: ['profesores', currentPage] });
+    setTotalCount(grados?.total || 0);
+  }, [grados]);
+  const updateGrado = useMutation({
+    mutationFn: (data: Grado) => gradosService.update(data),
+    onSuccess: (data: Grado) => {
+      queryClient.invalidateQueries({ queryKey: ['grados', currentPage] });
       message.success(
-        `El Profesor ${data.nombre} ${data.apellidos} fue agregado!`,
+        `El Grado ${data.nombre} fue actualizado!`,
       );
       setIsModalVisible(false);
     },
@@ -55,7 +76,7 @@ const Profesores = () => {
       if(data.errors){
         data.errors.id && message.error(data.errors.id);
         data.errors.nombre && message.error(data.errors.nombre);
-        data.errors.apellidos && message.error(data.errors.apellidos);
+        data.errors.profesorId && message.error(data.errors.profesorId);
       }else if(data){
         data && message.error(data as string);
       }else{
@@ -63,37 +84,11 @@ const Profesores = () => {
       }
     },
   });
-
-  const [action, setAction] = React.useState<any>(createProfesor);
-  
-  const updateProfesor = useMutation({
-    mutationFn: (data: Profesor) => profesoresService.update(data),
-    onSuccess: (data: Profesor) => {
-      queryClient.invalidateQueries({ queryKey: ['profesores', currentPage] });
-      message.success(
-        `El Profesor ${data.nombre} ${data.apellidos} fue actualizado!`,
-      );
-      setIsModalVisible(false);
-    },
-    onError: (error: AxiosError) => {
-      let data: any = error.response?.data;
-      if(data.errors){
-        data.errors.id && message.error(data.errors.id);
-        data.errors.nombre && message.error(data.errors.nombre);
-        data.errors.apellidos && message.error(data.errors.apellidos);
-      }else if(data){
-        data && message.error(data as string);
-      }else{
-        message.error(error.message);
-      }
-    },
-  });
-  
-  const deleteProfesor = useMutation({
-    mutationFn: (id: string) => profesoresService.delete(id),
+  const deleteGrado = useMutation({
+    mutationFn: (id: string) => gradosService.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profesores', currentPage] });
-      message.success('Profesor eliminado!');
+      queryClient.invalidateQueries({ queryKey: ['grados', currentPage] });
+      message.success('Grado eliminado!');
     },
     onError: (error: AxiosError) => {
       error.message && message.error(error.message);
@@ -114,14 +109,9 @@ const Profesores = () => {
         render: (text) => <a>{text}</a>,
       },
       {
-        title: 'Apellidos',
-        dataIndex: 'apellidos',
-        key: 'apellidos',
-      },
-      {
-        title: 'Genero',
-        dataIndex: 'genero',
-        key: 'genero',
+        title: 'Profesor',
+        dataIndex: 'profesorId',
+        key: 'profesorId',
       },
       {
         title: 'Action',
@@ -130,15 +120,14 @@ const Profesores = () => {
           <Space size='middle'>
             <a
               onClick={() => {
-                setProfesor(record);
-                setAction(updateProfesor);
+                setGrado(record);
                 setIsModalVisible(true);
               }}
             >
               Editar
             </a>
             <a onClick={()=>{
-              deleteProfesor.mutate(record.id);
+              deleteGrado.mutate(record.id);
             }}>Eliminar</a>
           </Space>
         ),
@@ -151,25 +140,35 @@ const Profesores = () => {
     <Row>
       <FormModal
         isVisisble={isModalVisible}
-        title='Profesor'
+        title='Grado'
         onClose={() => setIsModalVisible(false)}
         okText='Guardar'
-        isLoading={action.isPending}
-        onSubmit={action?.mutate}
-        initialValues={profesor}
+        isLoading={updateGrado.isPending}
+        onSubmit={updateGrado.mutate}
+        initialValues={grado}
       >
-        <ProfesorForm />
+        <GradoForm />
+      </FormModal>
+      <FormModal
+        isVisisble={isModalNewVisible}
+        title='Grado Nuevo'
+        onClose={() => setIsModalNewVisible(false)}
+        okText='Guardar'
+        isLoading={createGrado.isPending}
+        onSubmit={createGrado.mutate}
+        initialValues={grado}
+      >
+        <GradoForm />
       </FormModal>
       <Col span={24}>
-        <Card title='Profesores'>
+        <Card title='Grados'>
           <Row justify='end'>
             <Col>
               <Button
                 type='primary'
                 onClick={() => {
-                  setProfesor(new Profesor());
-                  setAction(createProfesor);
-                  setIsModalVisible(true);
+                  setGrado(new Grado());
+                  setIsModalNewVisible(true);
                 }}
               >
                 Nuevo
@@ -178,7 +177,7 @@ const Profesores = () => {
           </Row>
           <Table
             columns={columns}
-            dataSource={profesores?.data}
+            dataSource={grados?.data}
             loading={isLoading}
             rowKey={(record) => record.id}
             pagination={{
@@ -197,5 +196,5 @@ const Profesores = () => {
   );
 };
 
-export default Profesores;
+export default Grados;
 
