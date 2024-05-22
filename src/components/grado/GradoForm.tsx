@@ -1,5 +1,4 @@
 import { IFormProps } from "@/models/form-props.interface";
-import Genero from "@/models/genero.entity";
 import Grado from "@/models/grado.entity";
 import profesoresService from "@/services/profesores.service";
 import { useQuery } from "@tanstack/react-query";

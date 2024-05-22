@@ -78,9 +78,9 @@ const Profesores = () => {
     onError: (error: AxiosError) => {
       let data: any = error.response?.data;
       if(data.errors){
-        data.errors.id && message.error(data.errors.id);
-        data.errors.nombre && message.error(data.errors.nombre);
-        data.errors.apellidos && message.error(data.errors.apellidos);
+        data.errors.Id && message.error(data.errors.Id);
+        data.errors.Nombre && message.error(data.errors.Nombre);
+        data.errors.Apellidos && message.error(data.errors.Apellidos);
       }else if(data){
         data && message.error(data as string);
       }else{

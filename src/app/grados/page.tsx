@@ -1,9 +1,5 @@
 'use client';
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Button,
   Card,
@@ -41,20 +37,18 @@ const Grados = () => {
     mutationFn: (data: Grado) => gradosService.create(data),
     onSuccess: (data: Grado) => {
       queryClient.invalidateQueries({ queryKey: ['grados', currentPage] });
-      message.success(
-        `El Grado ${data.nombre} fue agregado!`,
-      );
+      message.success(`El Grado ${data.nombre} fue agregado!`);
       setIsModalNewVisible(false);
     },
     onError: (error: AxiosError) => {
       let data: any = error.response?.data;
-      if(data.errors){
+      if (data.errors) {
         data.errors.id && message.error(data.errors.id);
         data.errors.nombre && message.error(data.errors.nombre);
         data.errors.profesorId && message.error(data.errors.profesorId);
-      }else if(data){
+      } else if (data) {
         data && message.error(data as string);
-      }else{
+      } else {
         message.error(error.message);
       }
     },
@@ -66,20 +60,18 @@ const Grados = () => {
     mutationFn: (data: Grado) => gradosService.update(data),
     onSuccess: (data: Grado) => {
       queryClient.invalidateQueries({ queryKey: ['grados', currentPage] });
-      message.success(
-        `El Grado ${data.nombre} fue actualizado!`,
-      );
+      message.success(`El Grado ${data.nombre} fue actualizado!`);
       setIsModalVisible(false);
     },
     onError: (error: AxiosError) => {
       let data: any = error.response?.data;
-      if(data.errors){
+      if (data.errors) {
         data.errors.id && message.error(data.errors.id);
         data.errors.nombre && message.error(data.errors.nombre);
         data.errors.profesorId && message.error(data.errors.profesorId);
-      }else if(data){
+      } else if (data) {
         data && message.error(data as string);
-      }else{
+      } else {
         message.error(error.message);
       }
     },
@@ -126,9 +118,13 @@ const Grados = () => {
             >
               Editar
             </a>
-            <a onClick={()=>{
-              deleteGrado.mutate(record.id);
-            }}>Eliminar</a>
+            <a
+              onClick={() => {
+                deleteGrado.mutate(record.id);
+              }}
+            >
+              Eliminar
+            </a>
           </Space>
         ),
       },
@@ -139,6 +135,7 @@ const Grados = () => {
   return (
     <Row>
       <FormModal
+        key={0}
         isVisisble={isModalVisible}
         title='Grado'
         onClose={() => setIsModalVisible(false)}
@@ -156,7 +153,6 @@ const Grados = () => {
         okText='Guardar'
         isLoading={createGrado.isPending}
         onSubmit={createGrado.mutate}
-        initialValues={grado}
       >
         <GradoForm />
       </FormModal>
@@ -197,4 +193,3 @@ const Grados = () => {
 };
 
 export default Grados;
-
