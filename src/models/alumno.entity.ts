@@ -6,6 +6,7 @@ class Alumno {
     apellidos: string;
     genero: Genero;
     fechaNacimiento: Date;
+    fecha: any;
 }
 
 export default Alumno;

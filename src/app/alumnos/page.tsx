@@ -13,6 +13,7 @@ import {
   Tag,
   message,
 } from 'antd';
+import dayjs from 'dayjs';
 import React, { use, useState } from 'react';
 import { useMemo } from 'react';
 import moment from 'moment';
@@ -61,6 +62,7 @@ const Alumnos: React.FC = () => {
           <Space size='middle'>
             <a
               onClick={() => {
+                record.fecha = dayjs(record.fechaNacimiento);
                 setAlumno(record);
                 setOpenCreate(true);
               }}
