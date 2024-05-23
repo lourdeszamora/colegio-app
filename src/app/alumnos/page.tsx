@@ -1,6 +1,6 @@
 'use client';
 import alumnosService from '@/services/alumnos.service';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { UseMutationResult, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Button,
   Card,
@@ -10,23 +10,95 @@ import {
   Space,
   Table,
   TableProps,
-  Tag,
   message,
 } from 'antd';
 import dayjs from 'dayjs';
-import React, { use, useState } from 'react';
-import { useMemo } from 'react';
+import React, { useState , useMemo} from 'react';
 import moment from 'moment';
 import Alumno from '@/models/alumno.entity';
 import FormModal from '@/components/general/form-modal';
 import AlumnoForm from '@/components/alumnos/AlumnosForm';
 import { AxiosError } from 'axios';
 
-const Alumnos: React.FC = () => {
+interface AlumnoModal {
+  open: boolean;
+  alumno: Alumno;
+  action: UseMutationResult<Alumno, AxiosError<unknown,any>, Alumno, unknown>;
+}
+
+
+const Alumnos = () => {
   const [alumno, setAlumno] = useState<Alumno>();
   const [openDetails, setOpenDetails] = useState(false);
-  const [openCreate, setOpenCreate] = useState(false);
   const queryClient = useQueryClient();
+  const [currentPage, setCurrentPage] = useState(1);
+  const {
+    isLoading,
+    isError,
+    error,
+    data: alumnos,
+  } = useQuery({
+    queryKey: ['alumnos', currentPage],
+    queryFn: ({ signal }) => alumnosService.getAll(currentPage, 20, signal),
+  });
+  const createAlumno = useMutation({
+    mutationFn: (data: Alumno) => alumnosService.create(data),
+    onSuccess: (data: Alumno) => {
+      queryClient.invalidateQueries({ queryKey: ['alumnos', currentPage] });
+      message.success(
+        `El Alumno ${data.nombre} ${data.apellidos} fue agregado!`,
+      );
+      setAlumnoModal({open: false, alumno: new Alumno(), action: createAlumno});
+    },
+    onError: (error: AxiosError) => {
+      let data: any = error.response?.data;
+      if (data.errors) {
+        data.errors.Id && message.error(data.errors.Id);
+        data.errors.Nombre && message.error(data.errors.Nombre);
+        data.errors.Apellidos && message.error(data.errors.Apellidos);
+      } else if (data) {
+        data && message.error(data as string);
+      } else {
+        message.error(error.message);
+      }
+    },
+  });
+  const [alumnoModal, setAlumnoModal] = useState<AlumnoModal>({open: false, alumno: new Alumno(), action: createAlumno});
+  
+  const updateAlumno = useMutation({
+    mutationFn: (data: Alumno) => alumnosService.update(data),
+    onSuccess: (data: Alumno) => {
+      queryClient.invalidateQueries({ queryKey: ['alumnos', currentPage] });
+      message.success(
+        `El Alumno ${data.nombre} ${data.apellidos} fue actualizado!`,
+      );
+      setAlumnoModal({open: false, alumno: new Alumno(), action: createAlumno});
+    },
+    onError: (error: AxiosError) => {
+      let data: any = error.response?.data;
+      if(data.errors){
+        data.errors.Id && message.error(data.errors.Id);
+        data.errors.Nombre && message.error(data.errors.Nombre);
+        data.errors.Apellidos && message.error(data.errors.Apellidos);
+      }else if(data){
+        data && message.error(data as string);
+      }else{
+        message.error(error.message);
+      }
+    },
+  });
+
+  const deleteAlumno = useMutation({
+    mutationFn: (id: string) => alumnosService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alumnos', currentPage] });
+      message.success('Alumno eliminado!');
+    },
+    onError: (error: AxiosError) => {
+      error.message && message.error(error.message);
+    },
+  });
+
   const columns = useMemo(
     () => [
       {
@@ -63,8 +135,7 @@ const Alumnos: React.FC = () => {
             <a
               onClick={() => {
                 record.fecha = dayjs(record.fechaNacimiento);
-                setAlumno(record);
-                setOpenCreate(true);
+                setAlumnoModal({open: true, alumno: record, action: updateAlumno});
               }}
             >
               Editar
@@ -78,8 +149,7 @@ const Alumnos: React.FC = () => {
               Detalles
             </a>
             <a
-              onClick={() => {
-              }}
+              onClick={() => deleteAlumno.mutate(record.id)}
             >
               Eliminar
             </a>
@@ -90,17 +160,6 @@ const Alumnos: React.FC = () => {
     [],
   ) as TableProps<any>['columns'];
 
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const {
-    isLoading,
-    isError,
-    error,
-    data: alumnos,
-  } = useQuery({
-    queryKey: ['alumnos', currentPage],
-    queryFn: ({ signal }) => alumnosService.getAll(currentPage, 20, signal),
-  });
 
   const { data: grado } = useQuery({
     queryKey: ['alumnos', alumno?.id],
@@ -108,29 +167,6 @@ const Alumnos: React.FC = () => {
     enabled: openDetails && !!alumno,
   });
 
-  const createAlumno = useMutation({
-    mutationFn: (data: Alumno) => alumnosService.create(data),
-    onSuccess: (data: Alumno) => {
-      queryClient.invalidateQueries({ queryKey: ['alumnos', currentPage] });
-      message.success(
-        `El Alumno ${data.nombre} ${data.apellidos} fue agregado!`,
-      );
-      setOpenCreate(false);
-      createAlumno.reset();
-    },
-    onError: (error: AxiosError) => {
-      let data: any = error.response?.data;
-      if (data.errors) {
-        data.errors.Id && message.error(data.errors.Id);
-        data.errors.Nombre && message.error(data.errors.Nombre);
-        data.errors.Apellidos && message.error(data.errors.Apellidos);
-      } else if (data) {
-        data && message.error(data as string);
-      } else {
-        message.error(error.message);
-      }
-    },
-  });
 
   return (
     <Row justify={'center'}>
@@ -147,17 +183,18 @@ const Alumnos: React.FC = () => {
           Fecha de Nacimiento:{' '}
           {moment(alumno?.fechaNacimiento).format('DD/MM/YYYY')}
         </p>
-        <p>Grado: {grado?.grado.nombre}</p>
-        <p>Seccion: {grado?.seccion}</p>
+        {grado && <p>Grado: {grado?.grado.nombre}</p>}
+        {grado && <p>Seccion: {grado?.seccion}</p>}
+        {!grado && <p>El alumno no tiene asignado ningun grado</p>}
       </Modal>
       <FormModal
-        isVisisble={openCreate}
+        isVisisble={alumnoModal.open}
         title='Alumno'
-        onClose={() => setOpenCreate(false)}
+        onClose={() => setAlumnoModal({open: false, alumno: new Alumno(), action: createAlumno})}
         okText='Guardar'
-        onSubmit={createAlumno.mutate}
-        isLoading={createAlumno.isPending}
-        initialValues={alumno}
+        onSubmit={alumnoModal.action?.mutate}
+        isLoading={alumnoModal.action?.isPending}
+        initialValues={alumnoModal.alumno}
       >
         <AlumnoForm />
       </FormModal>
@@ -168,8 +205,7 @@ const Alumnos: React.FC = () => {
               <Button
                 type='primary'
                 onClick={() => {
-                  setOpenCreate(true);
-                  setAlumno(new Alumno());
+                  setAlumnoModal({open: true, alumno: new Alumno(), action: createAlumno});
                 }}
               >
                 Nuevo

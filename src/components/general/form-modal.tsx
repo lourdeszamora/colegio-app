@@ -33,7 +33,8 @@ function FormModal<T>({
   }, [form, initialValues]);
 
   let childrenProps = { form, onSubmit: children?.props.onSubmit };
-  if (onSubmit) childrenProps.onSubmit = onSubmit;
+  if (onSubmit && !!childrenProps) childrenProps.onSubmit = onSubmit;
+  if( form ) childrenProps.form = form;
 
   return (
     <Modal
@@ -44,7 +45,7 @@ function FormModal<T>({
       okButtonProps={{ size: 'small' }}
       cancelButtonProps={{ size: 'small' }}
       confirmLoading={isLoading}
-      onOk={form.submit}
+      onOk={() => !!onSubmit && onSubmit(form.getFieldsValue())}
       onCancel={() => {
         form.resetFields();
         if (onClose) {

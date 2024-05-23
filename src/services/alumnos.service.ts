@@ -7,6 +7,9 @@ class AlumnosService {
     getAll = (page: number, pageSize:number, signal?:AbortSignal) => axios.get<Paginable<Alumno>>(`/alumnos?page=${page}&pageSize=${pageSize}`, {signal}).then(res => res.data);
     getgrado = (id: string) => axios.get<AlumnoGrado>(`/alumnos/${id}/grado`).then(res => res.data);
     create = (data: Alumno) => axios.post(`/alumnos`, data).then(res => res.data);
-}
+    update = (data: Alumno) => axios.put(`/alumnos/${data.id}`, data).then(res => res.data);
+    delete = (id: string) => axios.delete(`/alumnos/${id}`).then(res => res.data);
+    setGrado = (id: string, data: AlumnoGrado) => axios.put(`/alumnos/${id}/grado`,data).then(res => res.data);
+}  
 
 export default new AlumnosService();

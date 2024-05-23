@@ -26,7 +26,7 @@ const Profesores = () => {
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const queryClient = useQueryClient();
   const [totalCount, setTotalCount] = React.useState(0);
-  const [profesor, setProfesor] = React.useState<Profesor>();
+  const [profesor, setProfesor] = React.useState<Profesor>(new Profesor());
   const {
     isLoading,
     isError,
